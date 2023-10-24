@@ -3,6 +3,7 @@ import pandas as pd
 
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, request,render_template, redirect,session, flash, get_flashed_messages
+from werkzeug.exceptions import BadRequestKeyError
 
 from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -13,7 +14,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 app.secret_key = 'secret_key'
 
-hotels = pd.read_csv("Dataset/Hotels.csv")  
+hotels = pd.read_csv("Dataset/Hotels.csv")
 
 def recommend_hotels(df,min_price,max_price,top_n=10):
     recommended_hotels= df[ (df["PRICE_RUPEES"]>=min_price) & (df["PRICE_RUPEES"]<=max_price) ]
@@ -21,7 +22,6 @@ def recommend_hotels(df,min_price,max_price,top_n=10):
     recommended_hotels= recommended_hotels.drop(columns=["NUMBER_OF_REVIEWS"])
     if not recommended_hotels.empty:
         return recommended_hotels
-    
     else:
         return "sorry, hotels are not available in this price range..."
 
@@ -100,19 +100,17 @@ def dashboard():
     
     return redirect('/login')
 
-@app.route('/discover', methods=['GET', 'POST'])
-def discover():
-    return render_template('discover.html')
-
-
 @app.route('/places', methods=['GET', 'POST'])
 def recommend_places():
     try:
         user_preferences = request.form["preferences"].split(", ")
         top_n = int(request.form["top-n"])
     except ValueError:  
-        return render_template("discover.html", places="Empty field detected", trigger=True)
-        
+        return render_template("places.html", places="Empty field detected", trigger=True)
+    
+    except BadRequestKeyError:  
+        return render_template("places.html", places="Empty field detected", trigger=True)
+    
     data = pd.read_csv('Dataset/final_Types.csv', encoding='latin-1')   
     
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
@@ -137,23 +135,27 @@ def recommend_places():
             
             final_list.append([place_name, info, link, image_path])
             
-        return render_template("discover.html", places=final_list, top_n=top_n, trigger=False, user_preferences=user_preferences)
+        return render_template("places.html", places=final_list, top_n=top_n, trigger=False, user_preferences=user_preferences)
 
     else:
-        return render_template("discover.html", places="Please enter a range.", trigger=True)
+        return render_template("places.html"    , places="Please enter a range.", trigger=True)
     
 
-@app.route('/hotels', methods=['GET', 'POST'])
+
+@app.route('/hotels/', methods=['GET', 'POST'])
 def recommend_hotels():
-    
     try:
         min_price = float(request.form["min-price"])
         max_price = float(request.form["max-price"])
         top_n = int(request.form["top-n"])
     
     except ValueError:
-        return render_template("discover.html", hotels="Please enter a range.", trigger=True)
+        return render_template("hotels.html", hotels="Please enter a range.", trigger=True)
     
+    except BadRequestKeyError:
+        return render_template("hotels.html")
+    
+
     df = pd.read_csv(r"./Dataset/Hotels.csv")
 
     recommended_hotels= df[ (df["PRICE_RUPEES"]>=min_price) & (df["PRICE_RUPEES"]<=max_price) ]
@@ -170,10 +172,10 @@ def recommend_hotels():
 
             final_list.append([place_name, price, link])
 
-        return render_template("discover.html", hotels=final_list, trigger=False, top_n=top_n, min_price=min_price, max_price=max_price)
+        return render_template("hotels.html", hotels=final_list, trigger=False, top_n=top_n, min_price=min_price, max_price=max_price)
             
     else:
-        return render_template("discover.html", hotels="No hotels found in this price range.", trigger=True)
+        return render_template("hotels.html", hotels="No hotels found in this price range.", trigger=True)
 
 
 @app.route('/restaurants', methods=['GET', 'POST'])
@@ -186,8 +188,11 @@ def recommend_restaurants():
         top_n = int(request.form["top-n"])
 
     except ValueError:
-        return render_template("discover.html", restaurants="Empty field detected", trigger=True)
+        return render_template("restaurants.html", restaurants="Empty field detected", trigger=True)
 
+    except BadRequestKeyError:
+        return render_template("restaurants.html")
+        
     data_food = pd.read_csv(r"./Dataset/zom_jaipur.csv", encoding='latin1')
     
     if not pd.api.types.is_numeric_dtype(data_food['cost_for_two']):
@@ -207,14 +212,17 @@ def recommend_restaurants():
     
     final_list = []
     
-    if not sorted_restaurants.empty:
+    if len(sorted_restaurants)==0:
+        return render_template("restaurants.html", restaurants="No restaurants found.", trigger=True)
+
+    elif not sorted_restaurants.empty:
         for index, row in sorted_restaurants.iterrows():
             final_list.append([row['Name'], row['Location'], row['category'], row['is_bar_available'], row['cost_for_two'], row['avg_din_rate']])
 
-        return render_template("discover.html", restaurants=final_list, trigger=False, user_category=user_category, is_vegetarian=is_vegetarian, max_cost=max_cost, user_cuisine=user_cuisine, top_n=top_n)
+        return render_template("restaurants.html", restaurants=final_list, trigger=False, user_category=user_category, is_vegetarian=is_vegetarian, max_cost=max_cost, user_cuisine=user_cuisine, top_n=top_n)
             
     else:
-        return render_template("discover.html", restaurants=final_list, trigger=True, user_category=user_category, is_vegetarian=is_vegetarian, max_cost=max_cost, user_cuisine=user_cuisine, top_n=top_n)
+        return render_template("restaurants.html", restaurants=final_list, trigger=True, user_category=user_category, is_vegetarian=is_vegetarian, max_cost=max_cost, user_cuisine=user_cuisine, top_n=top_n)
 
 
 @app.route('/logout')
@@ -223,4 +231,4 @@ def logout():
     return redirect('/login')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True) 
