@@ -4,18 +4,28 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="../static/css/loginform.css">
+	<link rel="stylesheet" href="../static/css/dropdown.css">
 	<title>Jaipur Unveiled</title>
 </head>
 <body>
 	<header>
 		<h2 class="logo"><img src="../static/images/others/logo.png" alt=""></h2>
 		<nav class="navigation">
-			<a href="{{ url_for('index') }}">Home</a>
-			<a href="{{ url_for('discover') }}">Discover</a>
-			<a href="#">Themes</a>
-			<a href="#">Go to map</a>
+			<div class="dropdown">
+				<button>Discover<i class="fa fa-caret-down"></i></button>
+				<a href="{{ url_for('index') }}">Home</a>
+				<div class="dropdown-content">	
+					<a href="{{ url_for('recommend_places') }}">Places</a>
+				  <a href="{{ url_for('recommend_hotels') }}">Hotels</a>
+				  <a href="{{ url_for('recommend_restaurants') }}">Restaurants</a>
+				</div>
+				<a href="#">Themes</a>
+				<a href="#">Go to map</a>
+			</div>
+
 			<a href="/login"><button class="butlogin">Login</button></a>
-		</nav>
+			</nav>
+
 	</header>
 	 <div class="start">
 		<div class="wrapper">
