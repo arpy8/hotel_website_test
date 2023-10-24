@@ -13,7 +13,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 app.secret_key = 'secret_key'
 
-hotels = pd.read_csv("Dataset/Hotels.csv")
+hotels = pd.read_csv("Dataset/Hotels.csv")  
 
 def recommend_hotels(df,min_price,max_price,top_n=10):
     recommended_hotels= df[ (df["PRICE_RUPEES"]>=min_price) & (df["PRICE_RUPEES"]<=max_price) ]
